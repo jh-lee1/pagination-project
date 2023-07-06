@@ -1,11 +1,56 @@
-import Head from 'next/head'
-import Image from 'next/image'
-import { Inter } from 'next/font/google'
-import styles from '@/styles/Home.module.css'
+import { Search } from '@/components/Search/Search';
+import { TableHeader } from '@/components/TableHeader';
+import { Pagination as PaginationComponent } from '@/components/pagination';
+import { PostHeader } from '@/components/postHeader';
+import { PostItem } from '@/components/postItem';
+import { Pagination } from '@/types/pagination';
+import { PostResponseDto } from '@/types/post/responseDto';
+import { SearchValue } from '@/types/post/searchValue';
+import styled from '@emotion/styled';
+import axios from 'axios';
+import { GetServerSideProps } from 'next';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 
-const inter = Inter({ subsets: ['latin'] })
+export default function Home(props: Pagination<PostResponseDto[]>) {
+  const router = useRouter();
+  const { page, category, value } = router.query;
+  // const [page , setPage] = useState(1);
+  // const [searchValue, setSearchValue] = useState<SearchValue>({category:'', value:''})
+  const [posts, setPosts] = useState<Pagination<PostResponseDto[]>>(props);
 
-export default function Home() {
+  // const handleChangePage = (currentPage: number) => {
+  // setPage(currentPage);
+  // };
+
+  // const handleSubmit = (value: SearchValue) => {
+  // setSearchValue(value);
+  // };
+
+  // useEffect(() => {
+  //   if (props) {
+  //     setPosts(props);
+  //   }
+  // }, [props]);
+
+  // useEffect(() => {
+  //   if (!router || !page) return;
+  //   (async function () {
+  //     const data = await axios.get('/api/post', {
+  //       params: {
+  //         page,
+  //         limit: 10,
+  //         category: category,
+  //         value: value
+  //       }
+  //     });
+  //     setPosts(data.data);
+  //   })();
+  // }, [page, category, value, router]);
+
+  if (!props) return <>loading...</>;
+
   return (
     <>
       <Head>
@@ -14,101 +59,50 @@ export default function Home() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <main className={`${styles.main} ${inter.className}`}>
-        <div className={styles.description}>
-          <p>
-            Get started by editing&nbsp;
-            <code className={styles.code}>src/pages/index.tsx</code>
-          </p>
-          <div>
-            <a
-              href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              By{' '}
-              <Image
-                src="/vercel.svg"
-                alt="Vercel Logo"
-                className={styles.vercelLogo}
-                width={100}
-                height={24}
-                priority
-              />
-            </a>
-          </div>
-        </div>
-
-        <div className={styles.center}>
-          <Image
-            className={styles.logo}
-            src="/next.svg"
-            alt="Next.js Logo"
-            width={180}
-            height={37}
-            priority
-          />
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Docs <span>-&gt;</span>
-            </h2>
-            <p>
-              Find in-depth information about Next.js features and&nbsp;API.
-            </p>
-          </a>
-
-          <a
-            href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Learn <span>-&gt;</span>
-            </h2>
-            <p>
-              Learn about Next.js in an interactive course with&nbsp;quizzes!
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Templates <span>-&gt;</span>
-            </h2>
-            <p>
-              Discover and deploy boilerplate example Next.js&nbsp;projects.
-            </p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <h2>
-              Deploy <span>-&gt;</span>
-            </h2>
-            <p>
-              Instantly deploy your Next.js site to a shareable URL
-              with&nbsp;Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
+      <Main>
+        <TableHeader />
+        <Table>
+          <Thead>
+            <PostHeader />
+          </Thead>
+          {/* <Tbody>{posts && posts.content.map(r => <PostItem key={r.seq} {...r} />)}</Tbody> */}
+          <Tbody>{props && props.content.map(r => <PostItem key={r.seq} {...r} />)}</Tbody>
+        </Table>
+        <PaginationComponent data={props} />
+        <Search data={props} />
+      </Main>
     </>
-  )
+  );
 }
+const Main = styled.main`
+  max-width: 1080px;
+  margin: 0px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 12px;
+`;
+const Table = styled.table`
+  margin-top: 15px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+`;
+const Thead = styled.thead``;
+const Tbody = styled.tbody``;
+
+export const getServerSideProps: GetServerSideProps = async context => {
+  const page = context.query?.page || 1;
+  const limitPath = `&limit=${10}`;
+  const categoryPath = context.query?.category ? `&category=${context.query.category}` : '';
+  const valuePath = context.query?.value ? `&value=${context.query.value}` : '';
+
+  const url = `http:/localhost:3000/api/post?page=${page}${limitPath}${categoryPath}${valuePath}`;
+
+  const getData = await fetch(url, { method: 'GET' });
+  const data = await getData.json();
+
+  return {
+    props: data
+  };
+};
