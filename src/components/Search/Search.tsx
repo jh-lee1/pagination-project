@@ -1,59 +1,38 @@
 import styled from '@emotion/styled';
-import { SearchCategory, categoryItems } from './SearchCategory';
+import { SearchFilter } from './SearchFilter';
 import { ChangeEvent, FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Pagination } from '@/types/pagination';
-import { PostResponseDto } from '@/types/post/responseDto';
+import { filterItem, filterKey } from '@/types/post/search';
 
 interface Props {
-  data?: Pagination<PostResponseDto[]>;
-  onSubmitSearch?: ({ category, value }: { category: string; value: string }) => void;
+  initialInputValue?: string;
+  inputValue?: string;
+  onSubmit?: (e: FormEvent<HTMLFormElement>) => void;
+  onChangeValue?: (e: ChangeEvent<HTMLInputElement>) => void;
 }
 
-export function Search({ data, onSubmitSearch }: Props) {
-  const initialValue = categoryItems.filter(f => f.key === data?.searchOption?.category)[0].name; //ssr select value
+export function Search({ initialInputValue = '', inputValue, onChangeValue, onSubmit }: Props) {
   const router = useRouter();
-  const [value, setValue] = useState('');
-  const [category, setCategory] = useState('title');
+  const [value, setValue] = useState<string>(initialInputValue);
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // onSubmitSearch && onSubmitSearch({ category, value });
-    router.push(`?page=1&category=${category}&value=${value}`);
+    onSubmit && onSubmit(e);
   };
 
   const handleChangeValue = (e: ChangeEvent<HTMLInputElement>) => {
     setValue(e.target.value);
-  };
-
-  const handleChangeCategory = (value: string) => {
-    setCategory(value);
+    onChangeValue && onChangeValue(e);
   };
 
   //CSR
-  useEffect(() => {
-    if (data) {
-      const serverCategoryValue = String(data.searchOption?.category);
-      const serverInputValue = String(data.searchOption?.value);
-      setCategory(serverCategoryValue);
-      setValue(serverInputValue);
-    }
-  }, [data]);
-
-  //   useEffect(() => {
-  //     const pathValue = String(queryValue || ''); //없는변수면 안에서 처리
-  //     const pathCategory = String(queryCategory || '');
-  //     if (pathValue) setValue(pathValue);
-  //     if (pathCategory) setCategory(pathCategory);
-  //     if (pathCategory && pathValue) {
-  //       onSubmitSearch && onSubmitSearch({ category: pathCategory, value: pathValue });
-  //     }
-  //   }, [router]);
+  // useEffect(() => {
+  //   setValue(initialInputValue);
+  // }, [filterValue, inputValue]);
 
   return (
     <Container onSubmit={handleSubmit}>
-      <SearchCategory initialValue={initialValue} onChangeCategory={handleChangeCategory} />
-      <SearchInput onChange={handleChangeValue} value={value || data?.searchOption?.value} />
+      <SearchInput onChange={handleChangeValue} value={inputValue ?? value} />
       <SearchButton type={'submit'}>검색</SearchButton>
     </Container>
   );
@@ -62,6 +41,7 @@ export function Search({ data, onSubmitSearch }: Props) {
 const Container = styled.form`
   display: flex;
 `;
+
 const SearchInput = styled.input`
   width: 260px;
   border: 1px solid #ededed;
@@ -70,6 +50,7 @@ const SearchInput = styled.input`
   padding: 11px 12px 11px 10px;
   border-radius: 4px;
 `;
+
 const SearchButton = styled.button`
   background-color: #f26f72;
   border-radius: 4px;
